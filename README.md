@@ -26,7 +26,7 @@ The data is real loan-level performance from the Freddie Mac Single-Family Loan-
 | Marts | `fct_roll_rates`: month-to-month transitions between delinquency buckets | ✅ Done |
 | Marts | `fct_delinquency_episodes`: runs of delinquency (gaps and islands), with depth and outcome | ✅ Done |
 | Marts | `fct_credit_state_transitions`: monthly moves between credit states, for the forecast | ✅ Done |
-| Analysis | 12-month Markov forecast, back-tested every year 2007–2024 (`scripts/markov_forecast.py`) | ✅ Done |
+| Analysis | 12-month Markov forecast, back-tested every year 2007–2024; v2 with per-vintage matrices (`scripts/markov_forecast.py`) | ✅ Done |
 | BI | Tableau Public dashboard | 🔜 Planned |
 
 ## Architecture
@@ -59,16 +59,20 @@ Freddie Mac yearly samples: 200,000 loans, 12.6 million loan-months, reported to
 - **The deeper the delinquency, the lower the cure rate.** Episodes that peaked at 30 days cured 97% of the time;
   episodes that reached 120+ cured 55% of the time, and 36% ended in foreclosure (REO) or a loss sale.
 - **Delinquency repeats.** 47% of loans that ever fell behind did so more than once; 16% did so five or more times.
-- **The forecast works in calm years and fails at turning points**, which is the useful lesson. Across 18 yearly
-  back-tests (2007–2024) the median error in 12-month defaults was 25%:
-  - **Calm years** were mostly within ±25% (2018: +8%, 2024: +5%).
-  - **Turning points were missed.** December 2007 and 2008 forecasts under-predicted defaults by 47% and 44%: last
-    year's roll rates could not see the crisis accelerating. December 2019 under-predicted by 90% (261 forecast vs
-    2,689 actual): no history contained COVID.
-  - **After a shock, it over-reacts.** December 2020 over-predicted by 306%: the 2020 matrix was full of forbearance
-    delinquency (60 → default at 68% a month, against about 30% normally) that mostly cured.
-  - **Portfolio mix matters.** December 2012 over-predicted by 72% as the new 2012 vintage joined: a single pooled
-    matrix applied crisis-era roll rates to new, well-underwritten loans.
+- **The forecast works in calm years and fails at turning points**, which is the useful lesson. 18 yearly
+  back-tests (2007–2024) compare forecast with actual 12-month defaults:
+  - **Turning points were missed** by any version. December 2007 and 2008 forecasts under-predicted defaults by
+    about 45%: last year's roll rates could not see the crisis accelerating. December 2019 under-predicted by 90%
+    (261 forecast vs 2,689 actual): no history contained COVID.
+  - **v1, one pooled matrix**, also missed for fixable reasons. December 2012 over-predicted by 72% as the new 2012
+    vintage joined (crisis-era roll rates applied to new, well-underwritten loans), and December 2020 by 306%
+    (roll rates inflated by forbearance delinquency that mostly cured).
+  - **v2, one matrix per vintage, estimated outside forbearance,** fixed both: December 2012 fell to +22% and
+    December 2020 to −17%. The median absolute error dropped from **25% to 18%** across all years, and from
+    **21% to 15%** outside the three shock years.
+  - **v2's trade-off:** it ignores forbearance when estimating, but forbearance delinquency still counts as default in
+    the target, so it under-predicts in 2021–2023 (December 2021: −43%). A version that also forecasts
+    forbearance-excluded defaults would be the consistent next step.
 
   A transition matrix is a sound baseline in stable conditions and blind at turning points, which is why loss
   forecasting under CECL and IFRS 9 adds macroeconomic scenarios on top.

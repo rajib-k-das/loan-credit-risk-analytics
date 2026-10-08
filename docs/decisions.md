@@ -124,3 +124,7 @@ Both versions forecast the same target, raw 12-month defaults, so their errors a
 v2 targets those two causes only. Turning points (Dec 2007, 2008, 2019) are not fixable from history alone and are
 reported separately; they are picked by the external events, not by the size of the error.
 **Check:** on the simulated single-vintage data with no forbearance, v2 gives exactly v1's numbers, as it should.
+**Result:** median absolute error 25.2% → 17.6% (all 18 back-tests), 21.4% → 15.4% (excluding Dec 2007, 2008, 2019).
+Dec 2012: +72% → +22%. Dec 2020: +306% → −17%. Cost: v2 under-predicts in 2021–2023 (Dec 2021: −43%), because
+forbearance delinquency is left out of the estimate but still counts as default in the target. Next step if extended:
+forecast forbearance-excluded defaults with the same matrices, so estimate and target agree.
