@@ -51,8 +51,8 @@ episodes as (
         count(*)                                                 as months_delinquent_in_episode,
         max(months_delinquent)                                   as peak_months_delinquent,
         bool_or(is_in_forbearance)                               as had_forbearance,
-        arg_max(next_reporting_month, reporting_month)           as next_reporting_month,
-        arg_max(next_delinquency_bucket, reporting_month)        as next_delinquency_bucket,
+        arg_max_null(next_reporting_month, reporting_month)      as next_reporting_month,     -- _null: keep a NULL "no next month"
+        arg_max_null(next_delinquency_bucket, reporting_month)   as next_delinquency_bucket,
         any_value(default_month)                                 as default_month,
         any_value(default_month_excl_forbearance)                as default_month_excl_forbearance
     from delinquent_months

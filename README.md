@@ -27,7 +27,7 @@ The data is real loan-level performance from the Freddie Mac Single-Family Loan-
 | Marts | `fct_delinquency_episodes`: runs of delinquency (gaps and islands), with depth and outcome | ✅ Done |
 | Marts | `fct_credit_state_transitions`: monthly moves between credit states, for the forecast | ✅ Done |
 | Analysis | 12-month Markov forecast, back-tested every year 2007–2024; v2 with per-vintage matrices (`scripts/markov_forecast.py`) | ✅ Done |
-| BI | Tableau Public dashboard | 🔜 Planned |
+| BI | Tableau Public dashboard (`scripts/export_for_tableau.py`, [build guide](docs/dashboard_guide.md)) | 🔄 In progress |
 
 ## Architecture
 
