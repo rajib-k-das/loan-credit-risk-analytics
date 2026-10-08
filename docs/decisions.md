@@ -113,3 +113,14 @@ year's roll rates equal last year's, not the model's complexity.
 actuals, the same range as forecasts made with the true matrix (sampling noise). Large misses on the real data
 therefore point to changing conditions (2008, COVID), not to the code.
 **Not yet:** separate matrices by credit band or vintage, and a version that ignores forbearance delinquency.
+
+## 013 — Forecast v2: a matrix per vintage, estimated outside forbearance
+
+**Choice:** alongside v1, run a second forecast that estimates one matrix per vintage and leaves months spent in
+forbearance out of the estimate. A row with fewer than 50 observations uses the pooled (forbearance-excluded) row.
+Both versions forecast the same target, raw 12-month defaults, so their errors are directly comparable.
+**Why:** v1's back-test showed two fixable misses: a pooled matrix applies crisis-era roll rates to new vintages
+(Dec 2012: +72%), and forbearance months inflate roll rates after a shock (Dec 2020: +306%).
+v2 targets those two causes only. Turning points (Dec 2007, 2008, 2019) are not fixable from history alone and are
+reported separately; they are picked by the external events, not by the size of the error.
+**Check:** on the simulated single-vintage data with no forbearance, v2 gives exactly v1's numbers, as it should.
