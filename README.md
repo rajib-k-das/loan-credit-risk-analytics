@@ -21,9 +21,10 @@ The data is real loan-level performance from the Freddie Mac Single-Family Loan-
 | Staging | Typed loans and loan-months; "not available" codes nulled; delinquency mapped explicitly | ✅ Done |
 | Intermediate | Loan-month states: reported bucket (for roll rates) and absorbing credit state (for default) | ✅ Done |
 | Intermediate | Default flags with and without COVID forbearance | ✅ Done |
-| Marts | Vintage default curves by months on book | 🔜 Next |
-| Marts | Roll-rate matrices | 🔜 Next |
-| Marts | Delinquency episodes (gaps and islands) | 🔜 Next |
+| Marts | `dim_loan`: one row per loan with risk bands (credit score, LTV, DTI) and outcome | ✅ Done |
+| Marts | `fct_vintage_curves`: cumulative default and prepayment rates by vintage, band and month on book | ✅ Done |
+| Marts | `fct_roll_rates`: month-to-month transitions between delinquency buckets | ✅ Done |
+| Marts | `fct_delinquency_episodes`: runs of delinquency (gaps and islands), with depth and outcome | ✅ Done |
 | Analysis | 12-month Markov forecast with back-test | 🔜 Planned |
 | BI | Tableau Public dashboard | 🔜 Planned |
 
@@ -71,7 +72,8 @@ pip install -r requirements.txt
 # Download the yearly sample zips from Freddie Mac (free registration) and put them in data/raw/
 python ingest/load_freddie_mac.py
 dbt build
-python scripts/profile_data.py     # check codes and default rates against the assumptions
+python scripts/profile_data.py       # check codes and default rates against the assumptions
+python scripts/summarize_findings.py # vintage curves, roll-rate matrix, episode outcomes
 ```
 
 To run without the Freddie Mac data, load the synthetic test loans instead:

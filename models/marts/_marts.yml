@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: dim_loan
+    description: One row per loan with origination attributes, risk bands (credit score, LTV, DTI) and performance to date.
+    columns:
+      - name: loan_id
+        tests: [unique, not_null]
+      - name: credit_score_band
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['<620', '620-679', '680-719', '720-759', '760+', 'Unknown']
+      - name: loan_status
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Prepaid', 'Loss exit', 'Removed', 'Active, defaulted', 'Active']
+
+  - name: fct_vintage_curves
+    description: >
+      Cumulative default and prepayment rates by vintage, credit-score band and month on book.
+      A loan counts at a month on book only if the data reaches that far for it (right-censoring).
+      Sum the count columns before dividing when combining bands.
+    tests:
+      - unique:
+          column_name: "vintage_year || '|' || credit_score_band || '|' || months_on_book"
+    columns:
+      - name: cumulative_default_rate
+        tests: [not_null]
+      - name: loans_observable
+        tests: [not_null]
+
+  - name: fct_roll_rates
+    description: >
+      Loans moving from one delinquency bucket to another between consecutive months, by month, vintage and
+      forbearance status. Sum loans by from_bucket and to_bucket to get a roll-rate matrix for any period.
+    columns:
+      - name: from_bucket
+        tests: [not_null]
+      - name: to_bucket
+        tests: [not_null]
+
+  - name: fct_delinquency_episodes
+    description: One row per unbroken run of 30+ days delinquency, with its length, depth, forbearance and outcome.
+    columns:
+      - name: episode_id
+        tests: [unique, not_null]
+      - name: outcome
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Cured', 'Paid off', 'REO', 'Loss exit', 'Removed', 'Unknown status',
+                         'Still delinquent', 'No further data', 'Gap in data']

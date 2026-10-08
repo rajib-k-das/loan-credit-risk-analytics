@@ -80,3 +80,21 @@ payment date) were reset after a modification while the delinquency count carrie
 **Choice:** keep them, flag them (`is_default_before_first_payment`) and exclude them from vintage curves and forecasts.
 The test warns while there are a few and fails above 20 loans, which would mean a load or logic problem rather than a quirk.
 **Rejected:** silently dropping them (hides the issue) or failing the build on 2 loans in 200,000 (blocks everything over noise).
+
+## 010 — Vintage curves: cumulative rate of loans originated, censored by calendar
+
+**Choice:** the cumulative default rate at month on book *m* is defaults by *m* divided by loans originated, counting only
+loans the data can see that far (first payment month + *m* − 1 on or before the last reporting month). Loans that prepay
+stay in the denominator. Counts are stored with the rates so a BI tool can combine segments correctly (sum, then divide).
+**Why:** this is the standard cumulative default rate used to compare vintages. Counting only observable loans keeps the
+youngest loans from dragging the tail of a curve down. `fully_observed_to_month` in the findings script shows where each
+curve is complete; past it, curves rest on fewer loans and should be read with care.
+**Rejected:** a hazard-rate (survival) curve, which divides by loans still active. It answers a different question
+("of loans still alive, how many default next month") and belongs in the forecast, not the vintage comparison.
+
+## 011 — Roll rates and episodes use consecutive months only
+
+**Choice:** a transition is counted only between two consecutive reporting months for the same loan; a delinquency
+episode is an unbroken run of 30+ day months (gaps and islands). A missing or unknown month ends a run.
+**Why:** pairing across a gap would invent a one-month transition that took longer. Unknown months are rare, so
+breaking runs at them costs little and keeps every transition real.
