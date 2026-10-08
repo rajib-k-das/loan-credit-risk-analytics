@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: stg_freddie__originations
+    description: One row per loan at origination, typed, with "not available" codes (9, 99, 999, 9999) set to null.
+    columns:
+      - name: loan_id
+        tests: [unique, not_null]
+      - name: vintage_year
+        tests: [not_null]
+      - name: first_payment_month
+        tests: [not_null]
+      - name: orig_upb
+        tests: [not_null]
+
+  - name: stg_freddie__performance
+    description: One row per loan per month, typed. Delinquency status is mapped explicitly, never cast blindly.
+    tests:
+      - unique:
+          column_name: "loan_id || '|' || cast(reporting_month as varchar)"
+    columns:
+      - name: loan_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_freddie__originations')
+                field: loan_id
+      - name: reporting_month
+        tests: [not_null]
+      - name: delinquency_status_code
+        description: "'0', '1', '2', ... months behind; 'RA' REO acquisition; 'XX' unknown."
+        tests:
+          - not_null
+      - name: zero_balance_code
+        description: "01 prepaid, 02 third-party sale, 03 short sale or charge-off, 09 REO disposition, 15 whole-loan sale, 16 reperforming securitization, 96 repurchase (defect)."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['01', '02', '03', '09', '15', '16', '96']
+              config:
+                severity: warn

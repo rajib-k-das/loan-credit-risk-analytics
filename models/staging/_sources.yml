@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: freddie
+    description: >
+      Freddie Mac Single-Family Loan-Level Dataset, yearly samples (50,000 loans per vintage),
+      loaded as text by ingest/load_freddie_mac.py. Non-commercial use only; never committed.
+    schema: raw
+    tables:
+      - name: loan_origination
+        description: One row per loan, as at origination (31 fields).
+      - name: loan_performance
+        description: One row per loan per month while the loan is active (35 fields).

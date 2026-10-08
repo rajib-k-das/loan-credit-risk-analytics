@@ -1,0 +1,19 @@
+name: dbt build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      # Freddie Mac data can't be redistributed, so CI runs on the synthetic test loans.
+      - run: python ingest/load_freddie_mac.py --raw-dir tests/fixtures
+      - run: dbt build

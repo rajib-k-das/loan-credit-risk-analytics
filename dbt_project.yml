@@ -1,0 +1,23 @@
+name: loan_credit_risk
+version: "0.1.0"
+config-version: 2
+profile: loan_credit_risk
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests/data_tests"]
+macro-paths: ["macros"]
+
+vars:
+  # Decision 002: a loan defaults when it first reaches 90+ days delinquent
+  # (3 or more missed payments) or exits with a loss-type zero balance code.
+  default_delinquency_months: 3
+
+models:
+  loan_credit_risk:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: table
+      +schema: intermediate

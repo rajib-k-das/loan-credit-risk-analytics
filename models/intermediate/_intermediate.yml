@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: int_loan_months
+    description: >
+      One row per loan per month with the reported delinquency bucket (not absorbing, for roll rates)
+      and the credit state (Defaulted is absorbing, for default rates and the Markov forecast).
+      Both a raw default and a default that ignores delinquency during forbearance are computed.
+    tests:
+      - unique:
+          column_name: "loan_id || '|' || cast(reporting_month as varchar)"
+    columns:
+      - name: delinquency_bucket
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Current', '30', '60', '90', '120+', 'Prepaid', 'Defaulted', 'Removed', 'Unknown']
+      - name: credit_state
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Current', '30', '60', '90', '120+', 'Prepaid', 'Defaulted', 'Removed', 'Unknown']
+      - name: months_on_book
+        tests: [not_null]

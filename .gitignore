@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+# Freddie Mac data is licensed for non-commercial use and must not be redistributed: never commit it
+data/raw/
+data/extracted/
+data/*.duckdb
+data/*.duckdb.wal
+*.zip
+target/
+dbt_packages/
+logs/
+.user.yml
+.DS_Store
+exports/
