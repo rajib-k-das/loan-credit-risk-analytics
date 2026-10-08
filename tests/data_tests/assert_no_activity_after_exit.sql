@@ -1,10 +1,11 @@
--- A loan that has paid off, defaulted out (loss exit) or been removed must have no later monthly rows.
+-- A loan that has a zero balance code (paid off, sold, REO disposition, removed) must have no later monthly rows.
+-- Note: REO acquisition ('RA') is not an exit. Those loans keep reporting until the property is sold (code 09).
 
 with exits as (
 
     select loan_id, min(reporting_month) as exit_month
     from {{ ref('int_loan_months') }}
-    where zero_balance_code is not null or delinquency_status_code = 'RA'
+    where zero_balance_code is not null
     group by loan_id
 
 )

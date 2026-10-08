@@ -37,9 +37,28 @@ CHECKS = {
                count(*) filter (where months_delinquent > 0)   as delinquent_rows
         from staging.stg_freddie__performance group by 1 order by 2 desc
     """,
+    "Raw values of the hardship and modification flags": """
+        select 'payment_deferral_flag' as field, payment_deferral_flag as value, count(*) as rows
+        from raw.loan_performance group by 1, 2
+        union all
+        select 'delinquency_due_to_disaster', delinquency_due_to_disaster, count(*) from raw.loan_performance group by 1, 2
+        union all
+        select 'modification_flag', modification_flag, count(*) from raw.loan_performance group by 1, 2
+        order by 1, 3 desc
+    """,
+    "REO: months between REO acquisition and sale": """
+        with reo as (
+            select loan_id,
+                   count(*) filter (where delinquency_status_code = 'RA') as reo_months,
+                   max(zero_balance_code) as exit_code
+            from intermediate.int_loan_months group by 1 having reo_months > 0
+        )
+        select exit_code, count(*) as loans, round(avg(reo_months), 1) as avg_reo_months, max(reo_months) as max_reo_months
+        from reo group by 1 order by 2 desc
+    """,
     "Forbearance months by year": """
         select year(reporting_month) as year, count(*) filter (where is_in_forbearance) as forbearance_months,
-               count(*) filter (where has_payment_deferral) as months_with_deferral
+               count(*) filter (where is_deferral_month) as deferrals_granted, count(*) filter (where has_payment_deferral) as months_with_deferral
         from intermediate.int_loan_months group by 1 having forbearance_months > 0 or months_with_deferral > 0
         order by 1
     """,

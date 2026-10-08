@@ -29,7 +29,9 @@ select
     -- Hardship and forbearance indicators (decision 004)
     nullif(trim(borrower_assistance_status), '')                        as borrower_assistance_status,
     trim(delinquency_due_to_disaster) = 'Y'                             as is_disaster_delinquency,
-    trim(payment_deferral_flag) = 'Y'                                   as has_payment_deferral,
+    -- Payment deferral: 'C' = deferral granted this month, 'P' = a deferral in a prior month (decision 004).
+    trim(payment_deferral_flag) = 'C'                                   as is_deferral_month,
+    trim(payment_deferral_flag) in ('C', 'P')                           as has_payment_deferral,
     trim(modification_flag) in ('Y', 'P')                               as is_modified,
 
     -- Loss components, populated only for loans that ended in a loss

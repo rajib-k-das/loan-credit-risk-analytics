@@ -7,11 +7,12 @@ with expected (loan_id, reporting_month, delinquency_bucket, credit_state, credi
     values
     -- Prepays: never defaults.
     ('FIXTURE00001', date '2019-06-01', 'Prepaid',   'Prepaid',   'Prepaid',   null::date,        null::date),
-    -- Defaults at the first 90-day month (July 2019) and stays defaulted through 120 days and REO.
+    -- Defaults at the first 90-day month (July 2019) and stays defaulted through 120 days, REO and the sale.
     ('FIXTURE00002', date '2019-06-01', '60',        '60',        '60',        date '2019-07-01', date '2019-07-01'),
     ('FIXTURE00002', date '2019-07-01', '90',        'Defaulted', 'Defaulted', date '2019-07-01', date '2019-07-01'),
     ('FIXTURE00002', date '2019-08-01', '120+',      'Defaulted', 'Defaulted', date '2019-07-01', date '2019-07-01'),
-    ('FIXTURE00002', date '2019-09-01', 'Defaulted', 'Defaulted', 'Defaulted', date '2019-07-01', date '2019-07-01'),
+    ('FIXTURE00002', date '2019-09-01', 'REO',       'Defaulted', 'Defaulted', date '2019-07-01', date '2019-07-01'),
+    ('FIXTURE00002', date '2019-10-01', 'Defaulted', 'Defaulted', 'Defaulted', date '2019-07-01', date '2019-07-01'),
     -- 90 days late in forbearance: a raw default, but not a default once forbearance is excluded.
     ('FIXTURE00003', date '2020-06-01', '90',        'Defaulted', '90',        date '2020-06-01', null::date),
     ('FIXTURE00003', date '2020-07-01', 'Current',   'Defaulted', 'Current',   date '2020-06-01', null::date),

@@ -15,12 +15,12 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['Current', '30', '60', '90', '120+', 'Prepaid', 'Defaulted', 'Removed', 'Unknown']
+                values: ['Current', '30', '60', '90', '120+', 'Prepaid', 'Defaulted', 'REO', 'Removed', 'Unknown']
       - name: credit_state
         tests:
           - not_null
           - accepted_values:
               arguments:
-                values: ['Current', '30', '60', '90', '120+', 'Prepaid', 'Defaulted', 'Removed', 'Unknown']
+                values: ['Current', '30', '60', '90', '120+', 'Prepaid', 'Defaulted', 'REO', 'Removed', 'Unknown']
       - name: months_on_book
         tests: [not_null]

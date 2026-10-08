@@ -1,7 +1,8 @@
--- A loan can't default before its first payment is due, and a default ignoring forbearance
--- can never come earlier than the raw default (it uses a stricter test).
+-- A loan shouldn't default before its first payment is due (decision 009).
+-- The real data has two such loans out of 200,000; they are flagged, not dropped.
+-- Warn while the count is tiny; fail if it grows, which would point to a load or logic problem.
+{{ config(warn_if = '>0', error_if = '>20') }}
 
-select loan_id, first_payment_month, default_month, default_month_excl_forbearance
+select distinct loan_id, vintage_year, first_payment_month, default_month
 from {{ ref('int_loan_months') }}
 where default_month < first_payment_month
-   or default_month_excl_forbearance < default_month

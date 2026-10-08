@@ -6,7 +6,8 @@
 --                       (absorbing). Used for default rates, vintage curves and the Markov forecast.
 --
 -- Default definition (decision 002): the first month a loan is 90+ days delinquent
--- (var default_delinquency_months, 3 missed payments), or exits through a loss-type zero balance code.
+-- (var default_delinquency_months, 3 missed payments), the property is taken into REO,
+-- or the loan exits through a loss-type zero balance code.
 -- A second version excludes forbearance (decision 004): delinquency while in forbearance does not count.
 
 {% set dq_months = var('default_delinquency_months') %}
@@ -31,10 +32,8 @@ classified as (
         date_diff('month', originations.first_payment_month, performance.reporting_month) + 1
                                                                         as months_on_book,
 
-        -- Loss-type exits: third-party sale (02), short sale or charge-off (03), REO disposition (09),
-        -- or the REO-acquisition status 'RA'.
-        coalesce(zero_balance_code in ('02', '03', '09'), false) or is_reo_acquisition
-                                                                        as is_loss_exit,
+        -- Loss-type exits: third-party sale (02), short sale or charge-off (03), REO disposition (09).
+        coalesce(zero_balance_code in ('02', '03', '09'), false)        as is_loss_exit,
 
         -- COVID-era and disaster forbearance (decision 004).
         coalesce(borrower_assistance_status = 'F', false) or coalesce(is_disaster_delinquency, false)
@@ -42,11 +41,13 @@ classified as (
 
         case
             when zero_balance_code = '01'                               then 'Prepaid'
-            when zero_balance_code in ('02', '03', '09')
-                 or is_reo_acquisition                                  then 'Defaulted'
+            when zero_balance_code in ('02', '03', '09')                then 'Defaulted'
             -- Repurchases, whole-loan sales, reperforming securitizations and any other exit:
             -- the loan leaves the sample without a credit outcome, so it is censored, not defaulted.
             when zero_balance_code is not null                          then 'Removed'
+            -- 'RA': the lender has taken the property (REO). The loan keeps reporting monthly,
+            -- usually for several months, until the property is sold and the loan exits with code 09.
+            when is_reo_acquisition                                     then 'REO'
             when months_delinquent = 0                                  then 'Current'
             when months_delinquent = 1                                  then '30'
             when months_delinquent = 2                                  then '60'
@@ -64,9 +65,10 @@ with_default_tests as (
 
     select
         *,
-        is_loss_exit or coalesce(months_delinquent >= {{ dq_months }}, false)
+        is_loss_exit or is_reo_acquisition or coalesce(months_delinquent >= {{ dq_months }}, false)
                                                                         as meets_default_definition,
-        is_loss_exit or coalesce(months_delinquent >= {{ dq_months }} and not is_in_forbearance, false)
+        is_loss_exit or is_reo_acquisition
+            or coalesce(months_delinquent >= {{ dq_months }} and not is_in_forbearance, false)
                                                                         as meets_default_definition_excl_forbearance
     from classified
 
@@ -109,9 +111,15 @@ select
     first_default.default_month_excl_forbearance,
 
     with_default_tests.is_loss_exit,
+    with_default_tests.is_reo_acquisition,
     with_default_tests.is_in_forbearance,
     with_default_tests.borrower_assistance_status,
+    with_default_tests.is_deferral_month,
     with_default_tests.has_payment_deferral,
+    -- Decision 009: two 2006 loans report 90+ days late before their first payment is due.
+    -- Kept, but flagged so vintage curves and forecasts can exclude them.
+    coalesce(first_default.default_month < with_default_tests.first_payment_month, false)
+                                                                                 as is_default_before_first_payment,
     with_default_tests.is_modified,
     with_default_tests.zero_balance_code,
     with_default_tests.zero_balance_month,

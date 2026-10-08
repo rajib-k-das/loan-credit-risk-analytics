@@ -5,7 +5,7 @@ The loans are invented and hand-checkable. Their expected results are asserted i
 tests/data_tests/assert_fixture_known_answers.sql:
 
     FIXTURE00001  prepays     current for three months, pays off in 2019-06            -> Prepaid, no default
-    FIXTURE00002  defaults    0, 0, 30, 60, 90, 120 days late, then REO (RA, code 09)  -> default 2019-07
+    FIXTURE00002  defaults    0, 0, 30, 60, 90, 120 days late, REO for 2 months, sold   -> default 2019-07
     FIXTURE00003  forbearance 30/60/90 days late in COVID forbearance, then deferral   -> raw default 2020-06,
                                                                                           no default excluding forbearance
     FIXTURE00004  removed     an unknown (XX) month, a 30-day episode that cures,
@@ -105,11 +105,11 @@ for i, period in enumerate(months("201903", 4)):
     perf_rows.append(performance("FIXTURE00001", period, "0" if last else "299000", "0", i,
                                  zero_balance_code="01" if last else "", zero_balance_date="201906" if last else ""))
 
-# 2. Rolls 0 -> 0 -> 1 -> 2 -> 3 -> 4, then REO acquisition with a loss.
-for i, (period, status) in enumerate(zip(months("201903", 7), ["0", "0", "1", "2", "3", "4", "RA"])):
-    last = status == "RA"
+# 2. Rolls 0 -> 0 -> 1 -> 2 -> 3 -> 4, then REO (RA) for two months; the property sells in 2019-10 with a loss.
+for i, (period, status) in enumerate(zip(months("201903", 8), ["0", "0", "1", "2", "3", "4", "RA", "RA"])):
+    last = period == "201910"
     perf_rows.append(performance("FIXTURE00002", period, "0" if last else "249000", status, i,
-                                 zero_balance_code="09" if last else "", zero_balance_date="201909" if last else "",
+                                 zero_balance_code="09" if last else "", zero_balance_date="201910" if last else "",
                                  actual_loss="-61000" if last else ""))
 
 # 3. COVID forbearance: three missed payments while in forbearance, then a payment deferral cures it.
@@ -119,7 +119,7 @@ for i, (period, status) in enumerate(zip(months("201912", 9), statuses)):
     perf_rows.append(performance("FIXTURE00003", period, "398000", status, i,
                                  assistance="F" if in_forbearance else "",
                                  disaster="Y" if in_forbearance else "",
-                                 deferral="Y" if period >= "202007" else ""))
+                                 deferral="C" if period == "202007" else "P" if period > "202007" else ""))
 
 # 4. An unknown month, a 30-day episode that cures, then removed for a defect (code 96 = censored, not a default).
 for i, (period, status) in enumerate(zip(months("201903", 5), ["0", "XX", "1", "0", "0"])):

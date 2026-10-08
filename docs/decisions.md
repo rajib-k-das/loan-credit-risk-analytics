@@ -13,19 +13,23 @@ Comparing them is the point of a vintage analysis. Four samples (about 200,000 l
 ## 002 — Default definition: 90+ days delinquent, or a loss-type exit
 
 **Choice:** a loan defaults in the first month it is 3 or more payments behind (`default_delinquency_months`),
-or exits through a loss-type zero balance code: 02 third-party sale, 03 short sale or charge-off, 09 REO disposition,
-or the REO-acquisition status `RA`.
+the property is taken into REO (status `RA`), or the loan exits through a loss-type zero balance code:
+02 third-party sale, 03 short sale or charge-off, 09 REO disposition.
 **Why:** 90 days past due is the standard serious-delinquency threshold in mortgage credit and in Basel's default definition.
 Loss exits are included because some loans go to a short sale or foreclosure sale without a 90-day record in the sample.
 **Configurable:** change the dbt var to test sensitivity (the known-answer test fails at 60 days, as it should).
 
-## 003 — States: Current, 30, 60, 90, 120+, Prepaid, Defaulted (absorbing)
+## 003 — States: Current, 30, 60, 90, 120+, REO, Prepaid, Defaulted (absorbing)
 
 **Choice:** two state columns on `int_loan_months`:
 - `delinquency_bucket`: the bucket reported that month. Not absorbing: a loan can roll 90 → 60 → Current.
   Used for **roll-rate matrices**, which must show cures.
 - `credit_state`: the same, except that once the default definition is met the loan stays `Defaulted`.
   Used for **default rates, vintage curves and the Markov forecast**.
+
+**REO is a state, not an exit** (found on the real data): after the lender takes the property (`RA`), the loan
+keeps reporting every month until the property is sold and the loan exits with code 09. The first build treated `RA` as
+an exit and a test caught 36,660 "rows after exit". REO months now have their own bucket, and a loan in REO counts as defaulted.
 
 **Why two:** found while building. With 90+ as the default trigger, an absorbing state model would never show the 90 or 120+
 buckets, so a single column would either lose the roll-rate detail or break the default rate. Two columns keep both honest.
@@ -37,7 +41,9 @@ Every default measure has a second version (`*_excl_forbearance`) in which delin
 Loss exits always count.
 **Why:** in 2020 servicers reported forborne loans as delinquent even though borrowers were permitted to skip payments.
 Counting them as defaults overstates 2019-vintage credit losses; ignoring them hides real stress. Showing both lets the reader judge.
-**To verify on real data:** the code values. `scripts/profile_data.py` lists every assistance code and flag count by year.
+**Verified on real data:** assistance codes are F (forbearance), T (trial period) and R (repayment plan); F carries most of
+the disaster flags. The disaster flag also appears without F in 2017–2018 (hurricane years), so pre-COVID disaster
+hardship is caught too. Payment deferral is coded C (granted this month) and P (deferred in a prior month), not Y.
 
 ## 005 — Forecast: a 12-month Markov chain, back-tested
 
@@ -64,3 +70,13 @@ A warning test lists unexpected values.
 **Choice:** the loader stores every field as text and checks the field count (31 / 35) before loading;
 all typing and "not available" codes (9, 99, 999, 9999) are handled in dbt staging.
 **Why:** a layout change then fails loudly at load time with a clear message, and every conversion rule is in SQL where it is reviewable and tested.
+
+## 009 — Loans that default before their first payment: flag, don't drop
+
+**Found on the real data:** two 2006-vintage loans (F06Q10088508, F06Q40224814) have first payment dates in 2011 and 2012,
+start reporting a month earlier, and are already 90+ days delinquent in their first reported month. A delinquency before
+any payment was due is impossible, so these records are inconsistent, most likely because the loan's terms (and first
+payment date) were reset after a modification while the delinquency count carried over.
+**Choice:** keep them, flag them (`is_default_before_first_payment`) and exclude them from vintage curves and forecasts.
+The test warns while there are a few and fails above 20 loans, which would mean a load or logic problem rather than a quirk.
+**Rejected:** silently dropping them (hides the issue) or failing the build on 2 loans in 200,000 (blocks everything over noise).
