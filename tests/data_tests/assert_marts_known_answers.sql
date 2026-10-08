@@ -92,6 +92,16 @@ episode_failures as (
 
 ),
 
+-- Credit-state transitions: both defaulting loans go straight from 60 days to Defaulted (the 90-day month).
+state_failures as (
+
+    select 'credit state 60 -> Defaulted' as failed_check
+    from (select coalesce(sum(loans), 0) as loans from {{ ref('fct_credit_state_transitions') }}
+          where from_state = '60' and to_state = 'Defaulted') as a
+    where a.loans <> 2
+
+),
+
 loan_failures as (
 
     select 'loan status ' || e.loan_id as failed_check
@@ -107,6 +117,7 @@ all_failures as (
     select * from curve_failures
     union all select * from roll_failures
     union all select * from episode_failures
+    union all select * from state_failures
     union all select * from loan_failures
 
 )

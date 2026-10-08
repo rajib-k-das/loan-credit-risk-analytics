@@ -25,7 +25,8 @@ The data is real loan-level performance from the Freddie Mac Single-Family Loan-
 | Marts | `fct_vintage_curves`: cumulative default and prepayment rates by vintage, band and month on book | ✅ Done |
 | Marts | `fct_roll_rates`: month-to-month transitions between delinquency buckets | ✅ Done |
 | Marts | `fct_delinquency_episodes`: runs of delinquency (gaps and islands), with depth and outcome | ✅ Done |
-| Analysis | 12-month Markov forecast with back-test | 🔜 Planned |
+| Marts | `fct_credit_state_transitions`: monthly moves between credit states, for the forecast | ✅ Done |
+| Analysis | 12-month Markov forecast, back-tested every year 2007–2024 (`scripts/markov_forecast.py`) | ✅ Done |
 | BI | Tableau Public dashboard | 🔜 Planned |
 
 ## Architecture
@@ -39,6 +40,27 @@ flowchart LR
     E --> F[Markov forecast<br/>and back-test]
     E --> G[Tableau Public<br/>dashboard]
 ```
+
+## What the data showed
+
+Freddie Mac yearly samples: 200,000 loans, 12.6 million loan-months, reported to March 2026.
+
+- **Vintage matters more than anything else.** By month 60, **13.4%** of 2007 loans had defaulted (90+ days late or a loss),
+  against **1.35%** of 2012 loans: a tenfold gap between loans made at the peak of the bubble and loans made after it.
+- **Credit score separates risk within a vintage.** In 2007, borrowers below 620 defaulted at **24.9%** by month 36;
+  borrowers at 760+ at **2.3%**.
+- **COVID forbearance distorts the standard default measure.** The 2019 vintage shows **4.91%** defaulted by month 36,
+  but only **0.96%** once delinquency during forbearance is excluded. 44% of forbearance delinquency episodes reached
+  90 days, yet **88% cured**, the same cure rate as ordinary episodes (87%). In forbearance, 90 days late did not
+  mean what it normally means.
+- **Roll rates rise with depth.** Outside forbearance, each month 0.9% of current loans miss a payment, 19% of 30-day
+  loans roll to 60, 37% of 60-day loans roll to 90, and 59% of 90-day loans roll to 120+. Once past 120 days,
+  91% are still there the next month.
+- **The deeper the delinquency, the lower the cure rate.** Episodes that peaked at 30 days cured 97% of the time;
+  episodes that reached 120+ cured 55% of the time, and 36% ended in foreclosure (REO) or a loss sale.
+- **Delinquency repeats.** 47% of loans that ever fell behind did so more than once; 16% did so five or more times.
+- **Two inconsistent loans** (out of 200,000) report 90+ days late before their first payment was due. They are flagged
+  and excluded from curves and forecasts ([decision 009](docs/decisions.md)).
 
 ## Modeling choices
 
@@ -74,6 +96,7 @@ python ingest/load_freddie_mac.py
 dbt build
 python scripts/profile_data.py       # check codes and default rates against the assumptions
 python scripts/summarize_findings.py # vintage curves, roll-rate matrix, episode outcomes
+python scripts/markov_forecast.py    # 12-month default forecast and its back-test
 ```
 
 To run without the Freddie Mac data, load the synthetic test loans instead:

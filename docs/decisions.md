@@ -98,3 +98,18 @@ curve is complete; past it, curves rest on fewer loans and should be read with c
 episode is an unbroken run of 30+ day months (gaps and islands). A missing or unknown month ends a run.
 **Why:** pairing across a gap would invent a one-month transition that took longer. Unknown months are rare, so
 breaking runs at them costs little and keeps every transition real.
+
+## 012 — Markov forecast: one pooled matrix, re-estimated each year on the trailing 12 months
+
+**Choice:** at each December cut-off, estimate one monthly transition matrix (Current, 30, 60 → Current, 30, 60,
+Defaulted, Prepaid, Removed) from all loan transitions in the previous 12 months, apply it 12 times to the loans active
+at the cut-off, and compare forecast defaults with what those loans actually did. Defaulted, Prepaid and Removed are absorbing.
+Transitions to an unknown status are left out.
+**Why:** this is the simplest version of the transition-matrix (roll-rate) method used for consumer credit loss
+forecasting. Keeping it simple makes the back-test readable: when it misses, the cause is the assumption that next
+year's roll rates equal last year's, not the model's complexity.
+**Validated:** on 30,000 loans simulated from a known, unchanging matrix, the estimated roll rates matched the true ones
+(Current → 30: 0.97–1.00% vs 1.00%; 60 → default: 39–41% vs 40%) and 12-month default forecasts were within 9% of
+actuals, the same range as forecasts made with the true matrix (sampling noise). Large misses on the real data
+therefore point to changing conditions (2008, COVID), not to the code.
+**Not yet:** separate matrices by credit band or vintage, and a version that ignores forbearance delinquency.

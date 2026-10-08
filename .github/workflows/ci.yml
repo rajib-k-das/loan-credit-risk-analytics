@@ -17,3 +17,5 @@ jobs:
       # Freddie Mac data can't be redistributed, so CI runs on the synthetic test loans.
       - run: python ingest/load_freddie_mac.py --raw-dir tests/fixtures
       - run: dbt build
+      # Smoke test: the forecast must run end to end (the fixture is too short for a back-test).
+      - run: python scripts/markov_forecast.py

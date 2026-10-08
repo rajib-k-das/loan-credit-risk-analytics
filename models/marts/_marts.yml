@@ -53,3 +53,17 @@ models:
               arguments:
                 values: ['Cured', 'Paid off', 'REO', 'Loss exit', 'Removed', 'Unknown status',
                          'Still delinquent', 'No further data', 'Gap in data']
+
+  - name: fct_credit_state_transitions
+    description: >
+      Loans moving between credit states (Current, 30, 60, Defaulted, Prepaid, Removed, Unknown) between consecutive
+      months. Input to the Markov forecast in scripts/markov_forecast.py.
+    columns:
+      - name: from_state
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Current', '30', '60', 'Unknown']
+      - name: to_state
+        tests: [not_null]
