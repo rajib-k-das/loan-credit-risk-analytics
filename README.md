@@ -13,6 +13,10 @@ and answers the questions a consumer-lending risk team asks every month:
 The data is real loan-level performance from the Freddie Mac Single-Family Loan-Level Dataset. The methods
 (vintage curves, roll rates, transition-matrix forecasting) are the same ones used for auto loans, cards and personal loans.
 
+**[▶ Open the interactive dashboard on Tableau Public](https://public.tableau.com/app/profile/rajib.kumar.das/viz/MortgageCreditRiskAnalytics/MortgageCreditRisk)**
+
+[![Mortgage credit risk dashboard](docs/dashboard.png)](https://public.tableau.com/app/profile/rajib.kumar.das/viz/MortgageCreditRiskAnalytics/MortgageCreditRisk)
+
 ## What it produces
 
 | Layer | Output | Status |
@@ -27,7 +31,7 @@ The data is real loan-level performance from the Freddie Mac Single-Family Loan-
 | Marts | `fct_delinquency_episodes`: runs of delinquency (gaps and islands), with depth and outcome | ✅ Done |
 | Marts | `fct_credit_state_transitions`: monthly moves between credit states, for the forecast | ✅ Done |
 | Analysis | 12-month Markov forecast, back-tested every year 2007–2024; v2 with per-vintage matrices (`scripts/markov_forecast.py`) | ✅ Done |
-| BI | Tableau Public dashboard (`scripts/export_for_tableau.py`, [build guide](docs/dashboard_guide.md)) | 🔄 In progress |
+| BI | [Tableau Public dashboard](https://public.tableau.com/app/profile/rajib.kumar.das/viz/MortgageCreditRiskAnalytics/MortgageCreditRisk) (`scripts/export_for_tableau.py`, [build guide](docs/dashboard_guide.md)) | ✅ Done |
 
 ## Architecture
 
@@ -78,6 +82,21 @@ Freddie Mac yearly samples: 200,000 loans, 12.6 million loan-months, reported to
   forecasting under CECL and IFRS 9 adds macroeconomic scenarios on top.
 - **Two inconsistent loans** (out of 200,000) report 90+ days late before their first payment was due. They are flagged
   and excluded from curves and forecasts ([decision 009](docs/decisions.md)).
+
+## Dashboard
+
+[The Tableau Public dashboard](https://public.tableau.com/app/profile/rajib.kumar.das/viz/MortgageCreditRiskAnalytics/MortgageCreditRisk) has four views, each with its own controls:
+
+- **Vintage default curves:** switch between raw defaults and defaults excluding forbearance, and filter by credit score band.
+  Excluding forbearance, the 2019 curve drops from about 4.9% to about 1% at month 36, close to the 2012 vintage.
+- **Roll-rate matrix:** where loans in each delinquency bucket go the next month, for any year (try 2009 vs 2016),
+  with or without forbearance months.
+- **How delinquency ends:** the outcome of every delinquency episode by how far behind it got.
+- **Forecast back-test:** forecast (v1, v2) vs actual 12-month defaults at each December, 2007–2024, plus the
+  forward forecast from March 2026.
+
+The dashboard uses only aggregated counts and rates exported by `scripts/export_for_tableau.py`; no loan-level
+Freddie Mac records are published.
 
 ## Modeling choices
 
